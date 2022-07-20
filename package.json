@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prestart": "tsc",
+    "start": "node build/app.js",
+    "start:prod" : "tsc && NODE_ENV=production node build/app.js"
   },
   "author": "",
   "license": "ISC",
@@ -15,7 +17,10 @@
     "discord-api-types": "^0.36.2",
     "discord.js": "^13.8.1",
     "dotenv": "^16.0.1",
+    "joi": "^17.6.0",
     "mongoose": "^6.4.4",
-    "typescript": "^4.7.4"
+    "typescript": "^4.7.4",
+    "winston": "^3.8.1",
+    "winston-daily-rotate-file": "^4.7.1"
   }
 }

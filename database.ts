@@ -1,11 +1,12 @@
 import { getModelForClass, prop, Ref } from "@typegoose/typegoose";
+import { logger } from "./config/winston";
 import mongoose from "mongoose";
-import './loadEnv';
+import config from './config';
 
 
 export async function connect() {
-    await mongoose.connect(process.env.DB_HOST!!, { user : process.env.DB_USER, pass : process.env.DB_PW, dbName : process.env.DB_NAME} );
-    console.log(`Connected to mongo ${mongoose.connection.db.databaseName} database`);
+    await mongoose.connect(config.DB_HOST!!, { user : config.DB_USER, pass : config.DB_PW, dbName : config.DB_NAME} );
+    logger.info(`Connected to mongo ${mongoose.connection.db.databaseName} database`);
     return mongoose
 }
 

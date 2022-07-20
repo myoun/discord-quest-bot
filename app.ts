@@ -1,7 +1,9 @@
 import { EmbedBuilder } from "@discordjs/builders";
 import { Client, Intents, Interaction, MessageActionRow, MessageButton, MessageEmbed, TextChannel } from "discord.js";
 import { connect, QuestModel, UserModel } from "./database";
-import './loadEnv';
+import { logger } from './config/winston';
+
+import config from './config';
 
 const client = new Client({
     intents : [
@@ -13,11 +15,11 @@ const client = new Client({
     ]
 });
 
-const DISCORD_GUILD = process.env.DISCORD_GUILD!!;
-const DISCORD_CHANNEL = process.env.DISCORD_CHANNEL!!;
+const DISCORD_GUILD = config.DISCORD_GUILD!!;
+const DISCORD_CHANNEL = config.DISCORD_CHANNEL!!;
 
 client.once("ready", () => {
-    console.log("Ready!")
+    logger.info("Ready!")
 })
 
 
@@ -34,7 +36,7 @@ client.on('interactionCreate', async interaction => {
             
                 await user.save()
                 await interaction.reply({ embeds : [new EmbedBuilder().setTitle("유저 생성됨").setDescription(`${user.discordId} | ${user.minecraftId}`).toJSON()] });
-                console.log('user created')
+                logger.info(`User(_id : ${user._id.toString()}) created`)
                 break;
             } else {
                 await interaction.reply("이미 유저가 있습니다.");
@@ -44,7 +46,7 @@ client.on('interactionCreate', async interaction => {
         }
         case 'quest' : {
             const subcommandName = interaction.options.getSubcommand()
-            console.log(subcommandName)
+            logger.info(`Command quest.${subcommandName} recieved.`)
             switch (subcommandName) {
                 case 'publish' : {
                     const user = await UserModel.findOne({discordId: interaction.user.id})
@@ -58,7 +60,7 @@ client.on('interactionCreate', async interaction => {
                             reward : interaction.options.getString("reward") ?? "none"
                         })
                         await quest.save();
-                        console.log("quest created");
+                        logger.info(`New Quest(_id : ${quest._id.toString()}) created.`);
                         (await (await client.guilds.fetch(DISCORD_GUILD)).channels.fetch(DISCORD_CHANNEL) as TextChannel).send({
                             embeds : [
                                 new EmbedBuilder()
@@ -130,11 +132,9 @@ client.on('interactionCreate', async interaction => {
                 }
                 case 'complete' : {
                     const user = await UserModel.findOne({discordId: interaction.user.id})
-                    console.log('come here')
                     if (user) {
                         const questId = interaction.options.getString("questid");
                         const quest = await QuestModel.findById(questId);
-                        console.log(quest);
                         if (quest == null || quest == undefined) {
                             await interaction.reply("없는 퀘스트 입니다.")
                             return;
@@ -181,16 +181,23 @@ client.on('interactionCreate', async interaction => {
 client.on('interactionCreate', async (i: Interaction) => {
     if (!i.isButton()) return;
 
+    logger.info(`User(discord : ${i.user.id}) clicked Button.`)
+
     if (i.customId.includes('accept-quest-')) {
-        console.log("questFound")
+        logger.info(`User(discord ${i.user.id}) clicked Quest Button.`)
         const questId = i.customId.split("-").at(2);
         const quest = (await QuestModel.findById(questId))
+        
         if (!quest) {
             await i.reply({ content : "Error Occured", ephemeral : true });
+            logger.info(`Cannot find quest.`)
         }
+
+        logger.info(`Quest(_id : ${quest?._id.toString()}) Found.`);
+
         const user = await UserModel.findOne({discordId : i.user.id})
         if (quest!.isCompleted) {
-            // await i.reply({ content : "끝난 퀘스트입니다.", ephemeral : true})
+            logger.info("Quest Already Completed.")
             await i.update({ components : [new MessageActionRow().addComponents(
                 new MessageButton().setLabel("수락 불가").setStyle("DANGER").setCustomId(`ended-quest-${questId}`).setDisabled(true)
             )]})
@@ -202,6 +209,7 @@ client.on('interactionCreate', async (i: Interaction) => {
             if (!isAlreadyAccepted) {
                 quest!.worker.push(user);
                 quest!.save();
+                logger.info("User accepted the quest.")
                 await i.reply({ content : `${user.minecraftId}(${i.user.tag})님이 퀘스트를 수락하셨어요!`});
             } else {
                 await i.reply({ content : `이미 수락하셨어요`, ephemeral : true})
@@ -209,6 +217,7 @@ client.on('interactionCreate', async (i: Interaction) => {
 
         } else {
             // 없다
+            logger.info("User not found in database.")
             await i.reply({ content : "/signin을 먼저 해주세요", ephemeral : true});
         }
 
@@ -218,8 +227,8 @@ client.on('interactionCreate', async (i: Interaction) => {
 
 
 connect().then(() => {
-    console.log("ready223")
-    client.login(process.env.DISCORD_TOKEN)
+    logger.info("Starting the application...")
+    client.login(config.DISCORD_TOKEN)
 })
 
 

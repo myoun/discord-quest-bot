@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
-import './loadEnv';
+import config from './config';
 
 const commands = [
     new SlashCommandBuilder().setName("ping").setDescription("Ping it!"),
@@ -37,8 +37,8 @@ const commands = [
 
 console.log(commands);
 
-const rest = new REST({ version : '9' }).setToken(process.env.DISCORD_TOKEN!!);
+const rest = new REST({ version : '9' }).setToken(config.DISCORD_TOKEN!!);
 
-rest.put(Routes.applicationGuildCommands(process.env.DISCORD_APPLICATION_ID!!, process.env.DISCORD_GUILD!!), { body : commands })
+rest.put(Routes.applicationGuildCommands(config.DISCORD_APPLICATION_ID!!, config.DISCORD_GUILD!!), { body : commands })
     .then(() => console.log('Successfully registered application commands.'))
     .catch(console.error);
