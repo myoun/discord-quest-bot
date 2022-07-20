@@ -1,7 +1,7 @@
 import { SlashCommandBuilder, SlashCommandSubcommandBuilder } from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
 import { Routes } from 'discord-api-types/v9'
-import config from './config';
+import config from './src/config/config';
 
 const commands = [
     new SlashCommandBuilder().setName("ping").setDescription("Ping it!"),

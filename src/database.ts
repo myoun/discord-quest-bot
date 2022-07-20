@@ -1,7 +1,7 @@
 import { getModelForClass, prop, Ref } from "@typegoose/typegoose";
 import { logger } from "./config/winston";
 import mongoose from "mongoose";
-import config from './config';
+import config from './config/config';
 
 
 export async function connect() {
