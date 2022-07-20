@@ -60,7 +60,11 @@ class QuestPublishCommand implements Subcommand {
                             new MessageButton()
                                 .setLabel("수락")
                                 .setStyle("SUCCESS")
-                                .setCustomId(`accept-quest-${quest._id}`)
+                                .setCustomId(`accept-quest-${quest._id}`),
+                            new MessageButton()
+                                .setLabel("포기")
+                                .setStyle("DANGER")
+                                .setCustomId(`giveup-quest-${quest._id}`)
                         )
                 ]
             })
