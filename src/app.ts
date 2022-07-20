@@ -1,10 +1,11 @@
-import { ButtonInteraction, Client, Intents, Interaction, MessageActionRow, MessageButton } from 'discord.js';
+import { ButtonInteraction, Client, Intents, Interaction, MessageActionRow, MessageButton, ModalSubmitInteraction } from 'discord.js';
 import { logger } from './config/winston';
 import config from './config/config';
 import { PingCommand } from './command/ping.command';
 import { QuestCommand } from './command/quest.command';
 import { SignInCommand } from './command/signin.command';
 import { connect, QuestModel, UserModel } from './database';
+import { EmbedBuilder } from '@discordjs/builders';
 
 const client = new Client({
     intents : [
@@ -109,6 +110,29 @@ client.on('interactionCreate', async (interaction : Interaction) => {
     } else if (interaction.customId.includes('giveup-quest-')) {
         await giveupQuest(interaction);
         return;
+    }
+})
+
+client.on('interactionCreate', async (interaction : Interaction) => {
+    if (!interaction.isModalSubmit) return;
+
+    logger.info(`Modal Submitted.`)
+
+    const i = interaction as ModalSubmitInteraction
+
+    if (i.customId == "signin-modal") {
+        const minecraftId = i.fields.getTextInputValue('minecraftId');
+
+        if (!await UserModel.findOne({discordId : interaction.user.id})) {
+            const user = await UserModel.create({discordId : interaction.user.id, minecraftId : minecraftId});
+            await user.save()
+            await i.reply({ embeds : [new EmbedBuilder().setTitle("유저 생성됨").setDescription(`${user.discordId} | ${user.minecraftId}`).toJSON()] });
+            logger.info(`User(_id : ${user._id.toString()}) created`)
+            return;
+        } else {
+            await i.reply("이미 유저가 있습니다.");
+            return;
+        }
     }
 })
 

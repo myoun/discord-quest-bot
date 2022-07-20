@@ -7,8 +7,7 @@ const commands = [
     new SlashCommandBuilder().setName("ping").setDescription("Ping it!"),
     new SlashCommandBuilder()
         .setName("signin")
-        .setDescription("sign in")
-        .addStringOption(option => option.setName("mcname").setDescription("minecraft name").setRequired(true)),
+        .setDescription("sign in"),
     new SlashCommandBuilder()
         .setName("quest")
         .setDescription("quest!")

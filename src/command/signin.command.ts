@@ -1,23 +1,30 @@
-import { Client, CommandInteraction } from "discord.js";
+import { Client, CommandInteraction, MessageActionRow, Modal, ModalActionRowComponent, TextInputComponent } from "discord.js";
 import { Command } from "./command";
 import { logger } from "../config/winston";
-import { EmbedBuilder } from "@discordjs/builders";
+import { ActionRowBuilder, EmbedBuilder, ModalActionRowComponentBuilder, ModalBuilder, TextInputBuilder } from "@discordjs/builders";
 import { UserModel } from "../database";
+import { TextInputStyle } from "discord-api-types/v9";
 
 export class SignInCommand implements Command {
     name: string = "signin";
 
     public async execute(client: Client, interaction: CommandInteraction): Promise<void> {
-        if (!await UserModel.findOne({discordId : interaction.user.id})) {
-            const user = await UserModel.create({discordId : interaction.user.id, minecraftId : interaction.options.getString("mcname")!});
+
+        const modal = new Modal()
+            .setTitle("가입")
+            .setCustomId("signin-modal")
+            
+        const minecraftIdInput = new TextInputComponent()
+            .setLabel("마인크래프트 ID")
+            .setCustomId("minecraftId")
+            .setStyle("SHORT")
+            .setMaxLength(16)
+            .setRequired(true)
         
-            await user.save()
-            await interaction.reply({ embeds : [new EmbedBuilder().setTitle("유저 생성됨").setDescription(`${user.discordId} | ${user.minecraftId}`).toJSON()] });
-            logger.info(`User(_id : ${user._id.toString()}) created`)
-            return;
-        } else {
-            await interaction.reply("이미 유저가 있습니다.");
-            return;
-        }
+        const actionRow = new MessageActionRow<TextInputComponent>().addComponents(minecraftIdInput)
+
+        modal.addComponents(actionRow);
+
+        await interaction.showModal(modal);
     }
 }
