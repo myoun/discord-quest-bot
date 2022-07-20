@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "prestart": "tsc",
-    "start": "node build/app.js",
-    "start:prod" : "tsc && NODE_ENV=production node build/app.js"
+    "build" : "tsc",
+    "start": "NODE_ENV=production node build/app.js",
+    "start:dev" : "tsc && node build/app.js"
   },
   "author": "",
   "license": "ISC",
