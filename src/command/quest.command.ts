@@ -1,4 +1,4 @@
-import { Client, CommandInteraction, MessageActionRow, MessageButton, MessageEmbed, TextChannel } from "discord.js";
+import { CacheType, Client, CommandInteraction, MessageActionRow, MessageButton, MessageEmbed, Modal, TextChannel, TextInputComponent } from "discord.js";
 import { QuestModel, UserModel } from "../database";
 import { Command, CommandWithSubcommand, Subcommand } from "./command";
 import { logger } from "../config/winston";
@@ -10,7 +10,7 @@ const DISCORD_CHANNEL = config.DISCORD_CHANNEL!!;
 
 export class QuestCommand implements CommandWithSubcommand {
     name : string = "quest";
-    subcommands : Subcommand[] = [new QuestPublishCommand(this), new QuestMineCommand(this), new QuestCompleteCommand(this)];
+    subcommands : Subcommand[] = [new QuestPublishCommand(this), new QuestMineCommand(this), new QuestCompleteCommand(this), new QuestCancelCommand(this)];
 
     public async execute(client: Client<boolean>, interaction: CommandInteraction): Promise<void> {
         const sc_name = interaction.options.getSubcommand()
@@ -85,8 +85,8 @@ class QuestMineCommand implements Subcommand {
     public async execute(client: Client<boolean>, interaction: CommandInteraction): Promise<void> {
         const user = await UserModel.findOne({discordId: interaction.user.id})
         if (user) {
-            const joinedQuests = await QuestModel.find({ 'worker' : { $gt : user._id }, isCompleted : false });
-            const createdQuests = await QuestModel.find({ 'requestor' : user._id, isCompleted : false});
+            const joinedQuests = await QuestModel.find({ 'worker' : { $in : [user._id] }, isCompleted : false, isCanceled : false});
+            const createdQuests = await QuestModel.find({ 'requestor' : user._id, isCompleted : false, isCanceled : false});
             
             const stringChangeFunction = (quests : Array<any>) => {
                 const str = quests.map(quest => `${quest.title}[${quest._id.toString()}] (${quest.worker.length}명 참가중)`).join('\n')
@@ -163,7 +163,40 @@ class QuestCompleteCommand implements Subcommand {
             }
             return;
         }
-        await interaction.reply("오류")
+        await interaction.reply("등록되지 않은 사용자입니다.")
         return;
+    }
+}
+
+class QuestCancelCommand implements Subcommand {
+
+    name : string = "cancel";
+
+    constructor(public parent : CommandWithSubcommand) {}
+
+    public async execute(client: Client<boolean>, interaction: CommandInteraction): Promise<void> {
+        const user = await UserModel.findOne({discordId: interaction.user.id})
+        if (!user) {
+            await interaction.reply("등록되지 않은 사용자입니다.")
+            return;
+        }
+        
+        const modal = new Modal()
+            .setTitle("퀘스트 취소")
+            .setCustomId("quest-cancel-modal")
+        
+        const questId = new TextInputComponent()
+            .setLabel("퀘스트 아이디")
+            .setMinLength(24)
+            .setMaxLength(24)
+            .setCustomId("questId")
+            .setStyle("SHORT")
+            .setRequired(true)
+        
+        const actionRow = new MessageActionRow<TextInputComponent>().addComponents(questId)
+
+        modal.addComponents(actionRow)
+
+        await interaction.showModal(modal);
     }
 }

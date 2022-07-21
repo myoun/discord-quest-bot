@@ -31,6 +31,12 @@ const commands = [
                 .setDescription('complete quest')
                 .addStringOption(option => option.setName('questid').setDescription('quest id').setRequired(true))
         )
+        .addSubcommand(
+            new SlashCommandSubcommandBuilder()
+                .setName("cancel")
+                .setDescription("cancel quest registration")
+        
+        )
     ].map(command => command.toJSON())
 
 

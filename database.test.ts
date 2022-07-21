@@ -1,4 +1,4 @@
-import { connect } from "./src/database";
+import { connect, QuestModel } from "./src/database";
 
 
 connect().then(async () => {

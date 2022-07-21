@@ -1,4 +1,4 @@
-import { ButtonInteraction, Client, Intents, Interaction, MessageActionRow, MessageButton, ModalSubmitInteraction } from 'discord.js';
+import { ButtonInteraction, Client, Intents, Interaction, MessageActionRow, MessageButton, ModalSubmitInteraction, TextChannel } from 'discord.js';
 import { logger } from './config/winston';
 import config from './config/config';
 import { PingCommand } from './command/ping.command';
@@ -16,6 +16,9 @@ const client = new Client({
         "CHANNEL"
     ]
 });
+
+const DISCORD_GUILD = config.DISCORD_GUILD!!;
+const DISCORD_CHANNEL = config.DISCORD_CHANNEL!!;
 
 client.on('interactionCreate', async (interaction: Interaction) => {
     if (!interaction.isCommand()) return;
@@ -36,8 +39,12 @@ const acceptQuest = async (interaction: ButtonInteraction) => {
     const quest = (await QuestModel.findById(questId))
     
     if (!quest) {
-        await interaction.reply({ content : "Error Occured", ephemeral : true });
         logger.info(`Cannot find quest.`)
+        await interaction.reply({ content : "Error occured", ephemeral : true});
+    }
+
+    if (quest?.isCanceled) {
+        await interaction.update({ components :[new MessageActionRow().addComponents(new MessageButton().setLabel("퀘스트 취소됨").setStyle("DANGER").setDisabled(true).setCustomId("cancelled-quest"))]})
     }
 
     logger.info(`Quest(_id : ${quest?._id.toString()}) Found.`);
@@ -133,6 +140,29 @@ client.on('interactionCreate', async (interaction : Interaction) => {
             await i.reply("이미 유저가 있습니다.");
             return;
         }
+    } else if (i.customId == "quest-cancel-modal") {
+        const user = await UserModel.findOne({discordId : interaction.user.id});
+        const quest = await QuestModel.findById(i.fields.getTextInputValue('questId'));
+
+        if (quest?.requestor?.toString() == user?._id.toString()) {
+            // The user owned the quest.
+            quest!!.isCanceled = true;
+
+            quest!!.save();
+
+            await i.reply("퀘스트 취소됨");
+            const workers : string[] = [];
+            for await (const worker of quest!.worker.map( worker =>  UserModel.findById(worker?.toString()))) {
+                workers.push(worker!.discordId);
+            }
+            (await (await client.guilds.fetch(DISCORD_GUILD)).channels.fetch(DISCORD_CHANNEL) as TextChannel).send({
+                content : `퀘스트 "${quest!!.title}"(${quest!!._id})가 취소되었습니다. ${workers.map(worker => `<@${worker}>`).join(', ')}`
+            })
+
+        } else {
+            await i.reply("퀘스트 신청자가 아닙니다.")
+        }
+
     }
 })
 

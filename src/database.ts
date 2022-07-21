@@ -42,6 +42,9 @@ export class Quest {
 
     @prop({ required : true, default : false })
     public isCompleted! : boolean;
+
+    @prop({ required : true, default : false})
+    public isCanceled? : boolean;
 }
 
 export const UserModel = getModelForClass(User);
